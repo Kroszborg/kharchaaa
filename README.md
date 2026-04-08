@@ -1,50 +1,93 @@
-# Welcome to your Expo app 👋
+# Kharchaaa — Personal Finance Tracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A premium React Native expense tracking app built with Expo, featuring a dark-first design, real-time insights, and multi-currency support.
 
-## Get started
+## Tech Stack
 
-1. Install dependencies
+| Layer | Choice |
+|---|---|
+| Framework | React Native + Expo SDK 54 (New Architecture) |
+| Routing | Expo Router v6 (file-based) |
+| State | Zustand v5 + Immer |
+| Database | expo-sqlite (local-first) |
+| Animations | Reanimated 4 + Gesture Handler |
+| Charts | react-native-gifted-charts |
+| Icons | HugeIcons |
+| Fonts | Inter (via @expo-google-fonts) |
 
-   ```bash
-   npm install
-   ```
+## Features
 
-2. Start the app
+- **Dashboard** — Account card with balance, category breakdown, recent transactions
+- **Spends** — Full transaction list with live search + category filter chips
+- **Insights** — Monthly bar chart, credit score gauge, currency switcher, category breakdown
+- **Profile** — User info, net flow stats, theme toggle (dark/light)
+- **Add Transaction** — Modal form with category picker, amount, merchant, date
+- **Onboarding** — 3-slide intro on first launch, skippable
+- **Multi-currency** — Switch display currency (INR / USD / EUR / GBP / CAD), all amounts stored in INR
+- **Hide balance** — Eye toggle on account card to mask sensitive numbers
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Running Locally
 
 ```bash
-npm run reset-project
+cd kharchaaa
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Scan the QR with **Expo Go** (iOS/Android) or press `a` for Android emulator.
 
-## Learn more
+> Requires Node 18+ and the Expo CLI (`npm i -g expo-cli`).
 
-To learn more about developing your project with Expo, look at the following resources:
+## Building the APK
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Prerequisites
 
-## Join the community
+```bash
+npm install -g eas-cli
+eas login
+```
 
-Join our community of developers creating universal apps.
+### Development APK (sideload)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+eas build --platform android --profile preview
+```
+
+This produces a `.apk` you can install directly on any Android device.
+
+### Production AAB (Play Store)
+
+```bash
+eas build --platform android --profile production
+```
+
+## Project Structure
+
+```
+kharchaaa/
+├── app/
+│   ├── _layout.tsx          # Root layout, DB init, onboarding gate
+│   ├── onboarding.tsx        # First-run intro slides
+│   ├── (tabs)/              # Main tab screens
+│   │   ├── index.tsx        # Dashboard / Home
+│   │   ├── transactions.tsx # Spends list + filter
+│   │   ├── insights.tsx     # Charts + analytics
+│   │   └── profile.tsx      # User profile
+│   ├── (auth)/              # Auth screens
+│   │   └── login.tsx        # Sign in / Sign up
+│   └── add-transaction.tsx  # Add transaction modal
+├── components/              # Shared UI components
+├── constants/               # Colors, tokens, typography
+├── context/                 # Theme context
+├── hooks/                   # useCurrency, etc.
+├── lib/                     # DB, services, format utils
+├── store/                   # Zustand slices
+└── eas.json                 # EAS Build profiles
+```
+
+## Notes
+
+- All data is stored locally via SQLite — no backend required to run
+- Demo data is seeded on first launch via `MOCK_TRANSACTIONS`
+- Currency conversion uses fixed exchange rates (INR base)
+- Theme preference persists across sessions via AsyncStorage

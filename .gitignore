@@ -41,3 +41,22 @@ app-example
 # generated native folders
 /ios
 /android
+
+# EAS build artifacts
+.eas/build
+
+# local secrets / env
+.env
+.env.local
+.env.development
+.env.production
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.sw?
+
+# temp
+*.tmp
+*.temp
