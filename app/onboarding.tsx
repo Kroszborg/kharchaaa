@@ -1,5 +1,4 @@
-import { Text } from '@/components/ui/text';
-import { Colors } from '@/constants/theme';
+import { useColors } from '@/context/theme-context';
 import { Radius, Spacing } from '@/constants/tokens';
 import { FontFamily } from '@/constants/typography';
 import { HugeiconsIcon } from '@hugeicons/react-native';
@@ -12,6 +11,7 @@ import {
   FlatList,
   Pressable,
   StyleSheet,
+  Text,
   View,
   type ViewToken,
 } from 'react-native';
@@ -49,9 +49,9 @@ const SLIDES = [
 ] as const;
 
 function Dot({ active }: { active: boolean }) {
+  const colors = useColors();
   const width = useSharedValue(active ? 20 : 6);
 
-  // Animate on active change (not during render)
   useEffect(() => {
     width.value = withSpring(active ? 20 : 6, { damping: 18, stiffness: 300 });
   }, [active]);
@@ -60,13 +60,14 @@ function Dot({ active }: { active: boolean }) {
     width: width.value,
     height: 6,
     borderRadius: 3,
-    backgroundColor: active ? Colors.accentBright : Colors.border,
+    backgroundColor: active ? colors.accentBright : colors.border,
   }));
   return <Animated.View style={style} />;
 }
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const listRef = useRef<FlatList>(null);
   const [index, setIndex] = useState(0);
@@ -82,12 +83,12 @@ export default function OnboardingScreen() {
       listRef.current?.scrollToIndex({ index: index + 1, animated: true });
     } else {
       await AsyncStorage.setItem('kh_onboarding_done', 'done');
-      router.replace('/(tabs)');
+      router.replace('/(auth)/login');
     }
   }
 
   return (
-    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
       <FlatList
         ref={listRef}
         data={SLIDES}
@@ -104,8 +105,8 @@ export default function OnboardingScreen() {
                 <HugeiconsIcon icon={item.icon} size={36} color={item.iconColor} strokeWidth={1.5} />
               </View>
             </View>
-            <Text style={styles.slideTitle}>{item.title}</Text>
-            <Text style={styles.slideBody}>{item.body}</Text>
+            <Text style={[styles.slideTitle, { color: colors.textPrimary }]}>{item.title}</Text>
+            <Text style={[styles.slideBody, { color: colors.textSecondary }]}>{item.body}</Text>
           </View>
         )}
       />
@@ -118,10 +119,14 @@ export default function OnboardingScreen() {
       {/* CTA */}
       <View style={styles.actions}>
         <Pressable
-          style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+          style={({ pressed }) => [
+            styles.primaryBtn,
+            { backgroundColor: colors.accent },
+            pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+          ]}
           onPress={next}
         >
-          <Text style={styles.primaryBtnText}>
+          <Text style={[styles.primaryBtnText, { color: colors.accentForeground }]}>
             {index < SLIDES.length - 1 ? 'Next' : 'Get Started'}
           </Text>
         </Pressable>
@@ -134,7 +139,9 @@ export default function OnboardingScreen() {
             }}
             hitSlop={12}
           >
-            <Text style={styles.skipText}>Already have an account? Sign in</Text>
+            <Text style={[styles.skipText, { color: colors.textTertiary }]}>
+              Already have an account? Sign in
+            </Text>
           </Pressable>
         )}
       </View>
@@ -145,7 +152,6 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   slide: {
     width: W,
@@ -174,14 +180,12 @@ const styles = StyleSheet.create({
   slideTitle: {
     fontSize: 28,
     fontFamily: FontFamily.bold,
-    color: Colors.textPrimary,
     letterSpacing: -0.8,
     textAlign: 'center',
   },
   slideBody: {
     fontSize: 15,
     fontFamily: FontFamily.regular,
-    color: Colors.textSecondary,
     letterSpacing: -0.2,
     lineHeight: 23,
     textAlign: 'center',
@@ -197,7 +201,6 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   primaryBtn: {
-    backgroundColor: Colors.accent,
     borderRadius: Radius.full,
     paddingVertical: Spacing.md + 2,
     alignItems: 'center',
@@ -205,13 +208,11 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontSize: 15,
     fontFamily: FontFamily.semibold,
-    color: '#FFFFFF',
     letterSpacing: 0.1,
   },
   skipText: {
     fontSize: 13,
     fontFamily: FontFamily.regular,
-    color: Colors.textTertiary,
     textAlign: 'center',
     paddingBottom: Spacing.sm,
   },

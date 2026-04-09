@@ -13,6 +13,7 @@ interface AccountCardProps {
   maskedNumber?: string;
   accountLabel?: string;
   cardType?: string;
+  cardColor?: string; // custom accent color; falls back to dark gradient
 }
 
 export function AccountCard({
@@ -21,6 +22,7 @@ export function AccountCard({
   maskedNumber = '•••• •••• •••• 0329',
   accountLabel = 'Primary Account',
   cardType = 'SAVINGS',
+  cardColor,
 }: AccountCardProps) {
   const isPositive = balance >= 0;
   const [isHidden, setIsHidden] = useState(false);
@@ -29,9 +31,12 @@ export function AccountCard({
   const displayNumber = isHidden ? '•••• •••• •••• ••••' : maskedNumber;
   const displayBalance = isHidden ? '••••••' : fmt(Math.abs(balance));
 
+  const gradFrom = cardColor ?? '#2E2E2E';
+  const gradTo   = cardColor ? `${cardColor}99` : '#101010';
+
   return (
     <LinearGradient
-      colors={['#2E2E2E', '#101010']}
+      colors={[gradFrom, gradTo]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={[styles.card, Shadow.md]}
@@ -93,6 +98,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius['2xl'],
     padding: Spacing.lg,
     minHeight: 188,
+    width: 320,
     overflow: 'hidden',
     justifyContent: 'space-between',
     borderWidth: 1,

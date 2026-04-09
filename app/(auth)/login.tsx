@@ -3,6 +3,8 @@ import { PrimaryButton } from '@/components/ui/primary-button';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { useColors } from '@/context/theme-context';
 import { Colors, Gradients } from '@/constants/theme';
+import { MOCK_TRANSACTIONS } from '@/lib/mock-data';
+import { transactionService } from '@/lib/services/transaction-service';
 import { Radius, Spacing } from '@/constants/tokens';
 import { FontFamily } from '@/constants/typography';
 import { useUserStore } from '@/store';
@@ -105,8 +107,11 @@ export default function LoginScreen() {
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.message ?? 'Login failed');
-        if (json.token) await AsyncStorage.setItem('kh_auth_token', json.token);
-        if (json.user?.name) updateProfile({ name: json.user.name, email: json.user.email ?? email });
+        // Backend returns { data: { accessToken, refreshToken, user } }
+        const data = json.data ?? json;
+        if (data.accessToken) await AsyncStorage.setItem('kh_auth_token', data.accessToken);
+        if (data.refreshToken) await AsyncStorage.setItem('kh_refresh_token', data.refreshToken);
+        if (data.user?.name) updateProfile({ name: data.user.name, email: data.user.email ?? email });
       } else {
         // Offline / no backend — create local session
         await AsyncStorage.setItem('kh_auth_token', 'local');
@@ -136,7 +141,9 @@ export default function LoginScreen() {
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.message ?? 'Registration failed');
-        if (json.token) await AsyncStorage.setItem('kh_auth_token', json.token);
+        const data = json.data ?? json;
+        if (data.accessToken) await AsyncStorage.setItem('kh_auth_token', data.accessToken);
+        if (data.refreshToken) await AsyncStorage.setItem('kh_refresh_token', data.refreshToken);
       } else {
         await AsyncStorage.setItem('kh_auth_token', 'local');
       }
@@ -253,7 +260,11 @@ export default function LoginScreen() {
         <PrimaryButton
           label="Continue without account"
           variant="outline"
-          onPress={() => router.replace('/(tabs)')}
+          onPress={async () => {
+            await AsyncStorage.setItem('kh_auth_token', 'demo');
+            await transactionService.seedDemoData(MOCK_TRANSACTIONS);
+            router.replace('/(tabs)');
+          }}
         />
 
         {/* ── Terms (sign up only) ── */}

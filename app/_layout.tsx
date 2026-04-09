@@ -17,9 +17,7 @@ import { ToastContainer } from '@/components/ui/toast';
 import { AppThemeProvider } from '@/context/theme-context';
 import { initDatabase } from '@/lib/db/database';
 import { runMigrations } from '@/lib/db/migrations';
-import { transactionService } from '@/lib/services/transaction-service';
-import { useTransactionStore, useUIStore } from '@/store';
-import { MOCK_TRANSACTIONS } from '@/lib/mock-data';
+import { useTransactionStore, useUIStore, useAccountStore } from '@/store';
 import type { ColorScheme } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -40,7 +38,9 @@ export default function RootLayout() {
   });
   const [dbReady, setDbReady]           = useState(false);
   const [onboardingDone, setOnboarding] = useState<boolean | null>(null);
+  const [authToken, setAuthToken]       = useState<string | null | undefined>(undefined);
   const initializeStore = useTransactionStore(s => s.initialize);
+  const initializeAccounts = useAccountStore(s => s.initialize);
   const setThemeMode = useUIStore(s => s.setThemeMode);
   const themeMode = useUIStore(s => s.themeMode);
   const hasBootstrapped = useRef(false);
@@ -51,24 +51,28 @@ export default function RootLayout() {
 
     async function bootstrap() {
       try {
-        // Check first-run flag
-        const flag = await AsyncStorage.getItem(ONBOARDING_KEY);
-        setOnboarding(flag === 'done');
+        // Check first-run flag + auth token in parallel
+        const [flag, token, savedTheme] = await Promise.all([
+          AsyncStorage.getItem(ONBOARDING_KEY),
+          AsyncStorage.getItem('kh_auth_token'),
+          AsyncStorage.getItem('kh_theme_mode'),
+        ]);
 
-        // Restore saved theme mode
-        const savedTheme = await AsyncStorage.getItem('kh_theme_mode');
+        setOnboarding(flag === 'done');
+        setAuthToken(token);
+
         if (savedTheme === 'light' || savedTheme === 'dark') {
           setThemeMode(savedTheme as ColorScheme);
         }
 
-        // DB init
+        // DB init (no demo seeding — done only via "Continue without account")
         const db = await initDatabase();
         await runMigrations(db);
-        await transactionService.seedDemoData(MOCK_TRANSACTIONS);
-        await initializeStore();
+        await Promise.all([initializeStore(), initializeAccounts()]);
       } catch (e) {
         console.error('[Bootstrap]', e);
-        setOnboarding(true); // Fail open — skip onboarding
+        setOnboarding(true);
+        setAuthToken(null);
       } finally {
         setDbReady(true);
       }
@@ -78,15 +82,18 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (fontsLoaded && dbReady && onboardingDone !== null) {
+    if (fontsLoaded && dbReady && onboardingDone !== null && authToken !== undefined) {
       SplashScreen.hideAsync().catch(() => {});
       if (!onboardingDone) {
         router.replace('/onboarding');
+      } else if (!authToken) {
+        router.replace('/(auth)/login');
       }
+      // else: has token → stay on (tabs)
     }
-  }, [fontsLoaded, dbReady, onboardingDone]);
+  }, [fontsLoaded, dbReady, onboardingDone, authToken]);
 
-  if (!fontsLoaded || !dbReady || onboardingDone === null) return null;
+  if (!fontsLoaded || !dbReady || onboardingDone === null || authToken === undefined) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -108,6 +115,10 @@ export default function RootLayout() {
           {/* ── Modals ── */}
           <Stack.Screen
             name="add-transaction"
+            options={{ presentation: 'modal', headerShown: false, gestureEnabled: true }}
+          />
+          <Stack.Screen
+            name="add-account"
             options={{ presentation: 'modal', headerShown: false, gestureEnabled: true }}
           />
           <Stack.Screen

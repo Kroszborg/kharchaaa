@@ -20,17 +20,22 @@ import {
   useTransactionStore,
   useUserStore,
   selectUserProfile,
+  useAccountStore,
+  selectDefaultAccount,
+  selectAccounts,
 } from '@/store';
 import type { FilterOption } from '@/components/transactions/filter-bar';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import {
   ArrowRight01Icon,
+  BankIcon,
   FlashIcon,
   Notification01Icon,
+  Add01Icon,
 } from '@hugeicons/core-free-icons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 const PERIOD_OPTIONS = [
   { label: 'Weekly', value: 'weekly' },
@@ -51,6 +56,8 @@ export default function DashboardScreen() {
 
   const [period, setPeriod] = useState<Period>('monthly');
   const setFilter = useTransactionStore(s => s.setFilter);
+  const accounts = useAccountStore(selectAccounts);
+  const defaultAccount = useAccountStore(selectDefaultAccount);
 
   const weeklyBreakdown = useMemo<CategorySummary[]>(() => {
     const cutoff = new Date();
@@ -113,8 +120,58 @@ export default function DashboardScreen() {
         </Pressable>
       </View>
 
-      {/* ── Account Card ── */}
-      <AccountCard cardholderName={profile.name} balance={balance} />
+      {/* ── Account Cards ── */}
+      {accounts.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.accountScroll}
+          snapToInterval={340}
+          decelerationRate="fast"
+        >
+          {accounts.map(acc => (
+            <AccountCard
+              key={acc.id}
+              cardholderName={profile.name}
+              balance={acc.balance}
+              maskedNumber={acc.lastFour ? `•••• •••• •••• ${acc.lastFour}` : undefined}
+              accountLabel={acc.name}
+              cardType={acc.type.toUpperCase()}
+              cardColor={acc.color}
+            />
+          ))}
+          <Pressable
+            style={[styles.addAccountCard, { borderColor: colors.border }]}
+            onPress={() => router.push('/add-account' as never)}
+          >
+            <View style={[styles.addAccountIcon, { backgroundColor: colors.surface }]}>
+              <HugeiconsIcon icon={Add01Icon} size={20} color={colors.textTertiary} strokeWidth={1.5} />
+            </View>
+            <Text style={{ color: colors.textTertiary, fontSize: 13, fontFamily: FontFamily.medium }}>
+              Add account
+            </Text>
+          </Pressable>
+        </ScrollView>
+      ) : (
+        <Pressable
+          style={[styles.emptyAccountCard, { borderColor: colors.border }]}
+          onPress={() => router.push('/add-account' as never)}
+        >
+          <View style={[styles.emptyAccountIcon, { backgroundColor: colors.surfaceElevated }]}>
+            <HugeiconsIcon icon={BankIcon} size={24} color={colors.textTertiary} strokeWidth={1.5} />
+          </View>
+          <Text style={[styles.emptyAccountTitle, { color: colors.textPrimary }]}>Add your first account</Text>
+          <Text style={[styles.emptyAccountSub, { color: colors.textTertiary }]}>
+            Track balances across all your bank accounts and wallets
+          </Text>
+          <View style={[styles.addAccountBtn, { backgroundColor: colors.accent }]}>
+            <HugeiconsIcon icon={Add01Icon} size={14} color={colors.accentForeground} strokeWidth={2} />
+            <Text style={{ fontSize: 13, fontFamily: FontFamily.semibold, color: colors.accentForeground }}>
+              Add Account
+            </Text>
+          </View>
+        </Pressable>
+      )}
 
       {/* ── Expense header with period toggle ── */}
       <View style={styles.expenseRow}>
@@ -238,6 +295,66 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.error,
     borderWidth: 1.5,
     borderColor: 'transparent',
+  },
+
+  // Accounts
+  accountScroll: {
+    gap: Spacing.md,
+    paddingRight: Spacing.base,
+  },
+  addAccountCard: {
+    width: 120,
+    minHeight: 188,
+    borderRadius: Radius['2xl'],
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+  },
+  addAccountIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyAccountCard: {
+    borderRadius: Radius['2xl'],
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    padding: Spacing.xl,
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  emptyAccountIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.xs,
+  },
+  emptyAccountTitle: {
+    fontSize: 15,
+    fontFamily: FontFamily.semibold,
+    letterSpacing: -0.2,
+  },
+  emptyAccountSub: {
+    fontSize: 13,
+    fontFamily: FontFamily.regular,
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: Spacing.xs,
+  },
+  addAccountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.full,
+    marginTop: Spacing.xs,
   },
 
   // Expense row

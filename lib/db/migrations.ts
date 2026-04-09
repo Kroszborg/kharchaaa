@@ -24,6 +24,18 @@ const MIGRATIONS: { version: number; up: (db: SQLiteDatabase) => Promise<void> }
       await seedDefaultCategories(db);
     },
   },
+  {
+    version: 2,
+    // Extend accounts table with fields needed for bank account cards
+    up: async (db) => {
+      const cols = await db.getAllAsync<{ name: string }>("PRAGMA table_info(accounts)");
+      const existing = new Set(cols.map(c => c.name));
+      if (!existing.has('last_four'))  await db.runAsync("ALTER TABLE accounts ADD COLUMN last_four TEXT NOT NULL DEFAULT ''");
+      if (!existing.has('color'))      await db.runAsync("ALTER TABLE accounts ADD COLUMN color TEXT NOT NULL DEFAULT '#6366F1'");
+      if (!existing.has('is_default')) await db.runAsync("ALTER TABLE accounts ADD COLUMN is_default INTEGER NOT NULL DEFAULT 0");
+      if (!existing.has('created_at')) await db.runAsync("ALTER TABLE accounts ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now'))");
+    },
+  },
 ];
 
 async function seedDefaultCategories(db: SQLiteDatabase) {

@@ -8,7 +8,7 @@ import { Colors } from '@/constants/theme';
 import { Radius, Spacing } from '@/constants/tokens';
 import { FontFamily } from '@/constants/typography';
 import type { Category } from '@/lib/mock-data';
-import { useTransactionStore, useUIStore } from '@/store';
+import { useTransactionStore, useUIStore, useAccountStore } from '@/store';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -23,7 +23,7 @@ import {
   View,
 } from 'react-native';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { Calendar01Icon } from '@hugeicons/core-free-icons';
+import { Calendar01Icon, BankIcon } from '@hugeicons/core-free-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Step = 'amount' | 'details';
@@ -34,6 +34,7 @@ export default function AddTransactionModal() {
   const colors = useColors();
   const addTransaction = useTransactionStore(s => s.addTransaction);
   const showToast = useUIStore(s => s.showToast);
+  const accounts = useAccountStore(s => s.accounts);
 
   const [step, setStep] = useState<Step>('amount');
   const [isSaving, setIsSaving] = useState(false);
@@ -44,6 +45,8 @@ export default function AddTransactionModal() {
   const [note, setNote] = useState('');
   const [date, setDate] = useState<Date>(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
+  const defaultAccount = accounts.find(a => a.isDefault) ?? accounts[0];
+  const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(defaultAccount?.id);
 
   function handleKeyPress(key: string) {
     if (key === '⌫') {
@@ -78,6 +81,7 @@ export default function AddTransactionModal() {
 
     setIsSaving(true);
     try {
+      const selectedAccount = accounts.find(a => a.id === selectedAccountId);
       await addTransaction({
         amount: parseFloat(amount),
         type: txType,
@@ -86,6 +90,7 @@ export default function AddTransactionModal() {
         note: note.trim() || undefined,
         source: 'manual',
         date: date.toISOString(),
+        account: selectedAccount?.name,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast('Transaction saved', 'success');
@@ -162,6 +167,39 @@ export default function AddTransactionModal() {
                 </Text>
                 <Text style={[styles.dateTap, { color: colors.textTertiary }]}>Tap to change</Text>
               </Pressable>
+
+              {/* Account picker (only if accounts exist) */}
+              {accounts.length > 0 && (
+                <View>
+                  <Text style={[{ fontSize: 12, fontFamily: FontFamily.medium, color: colors.textSecondary, marginBottom: 8 }]}>
+                    Account
+                  </Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                    {accounts.map(acc => (
+                      <Pressable
+                        key={acc.id}
+                        style={{
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                          borderRadius: 999,
+                          borderWidth: 1,
+                          borderColor: selectedAccountId === acc.id ? acc.color : colors.border,
+                          backgroundColor: selectedAccountId === acc.id ? acc.color + '20' : colors.surface,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                        onPress={() => setSelectedAccountId(acc.id)}
+                      >
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: acc.color }} />
+                        <Text style={{ fontSize: 13, fontFamily: FontFamily.medium, color: colors.textPrimary, includeFontPadding: false }}>
+                          {acc.name}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
 
               <CategoryPicker selected={category} onSelect={setCategory} />
               <MerchantInput

@@ -5,16 +5,16 @@
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
     "type-check": "tsc --noEmit",
     "clean:metro": "powershell -Command \"Remove-Item $env:TEMP\\metro-cache,$env:TEMP\\metro-file-map* -Recurse -Force -ErrorAction SilentlyContinue; Write-Host 'Metro cache cleared'\"",
     "clean:android": "powershell -Command \"Remove-Item android\\app\\build,android\\build,android\\.gradle,android\\app\\.cxx -Recurse -Force -ErrorAction SilentlyContinue; Write-Host 'Android build cleaned'\"",
-    "build:release": "npm run clean:metro && cd android && gradlew.bat assembleRelease --stacktrace",
-    "build:release:clean": "npm run clean:metro && npm run clean:android && cd android && gradlew.bat assembleRelease --stacktrace",
-    "build:aab": "npm run clean:metro && cd android && gradlew.bat bundleRelease --stacktrace"
+    "build:release": "npm run clean:metro && expo prebuild --platform android && node scripts/patch-gradle.js && cd android && gradlew.bat assembleRelease",
+    "build:release:clean": "npm run clean:metro && expo prebuild --platform android --clean && node scripts/patch-gradle.js && cd android && gradlew.bat assembleRelease",
+    "build:aab": "npm run clean:metro && expo prebuild --platform android && cd android && gradlew.bat bundleRelease"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

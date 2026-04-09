@@ -19,6 +19,7 @@ import {
 import { useThemeMode } from '@/hooks/use-theme-mode';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import {
+  BankIcon,
   Invoice02Icon,
   Logout01Icon,
   Moon02Icon,
@@ -175,7 +176,17 @@ export default function ProfileScreen() {
           label: 'Sign out',
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.removeItem('kh_auth_token');
+            // Tell backend to invalidate refresh token (best-effort)
+            const token = await AsyncStorage.getItem('kh_refresh_token');
+            const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+            if (apiUrl && token) {
+              fetch(`${apiUrl}/api/auth/logout`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refreshToken: token }),
+              }).catch(() => {});
+            }
+            await AsyncStorage.multiRemove(['kh_auth_token', 'kh_refresh_token']);
             router.replace('/(auth)/login');
           },
         },
@@ -305,6 +316,20 @@ export default function ProfileScreen() {
                         thumbColor={themeMode === 'dark' ? colors.accentBright : colors.textTertiary}
                       />
                     }
+                  />
+                </View>
+              </View>
+
+              {/* Accounts */}
+              <View style={styles.section}>
+                <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>ACCOUNTS</Text>
+                <View style={[styles.card, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+                  <SettingRow
+                    icon={BankIcon}
+                    label="Manage bank accounts"
+                    value="Add, edit, delete"
+                    onPress={() => router.push('/add-account' as never)}
+                    colors={colors}
                   />
                 </View>
               </View>
