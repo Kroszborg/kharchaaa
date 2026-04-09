@@ -7,7 +7,7 @@ import {
 } from '@expo-google-fonts/inter';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';
@@ -18,6 +18,7 @@ import { AppThemeProvider } from '@/context/theme-context';
 import { initDatabase } from '@/lib/db/database';
 import { runMigrations } from '@/lib/db/migrations';
 import { useTransactionStore, useUIStore, useAccountStore } from '@/store';
+import { syncService } from '@/lib/services/sync-service';
 import type { ColorScheme } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -44,6 +45,19 @@ export default function RootLayout() {
   const setThemeMode = useUIStore(s => s.setThemeMode);
   const themeMode = useUIStore(s => s.themeMode);
   const hasBootstrapped = useRef(false);
+
+  // Start/stop background sync based on auth state
+  useEffect(() => {
+    if (authToken) {
+      syncService.startBackgroundSync();
+    } else {
+      syncService.stopBackgroundSync();
+    }
+
+    return () => {
+      syncService.stopBackgroundSync();
+    };
+  }, [authToken]);
 
   useEffect(() => {
     if (hasBootstrapped.current) return;

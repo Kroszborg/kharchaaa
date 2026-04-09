@@ -5,6 +5,7 @@ import { useColors } from '@/context/theme-context';
 import { Colors, Gradients } from '@/constants/theme';
 import { MOCK_TRANSACTIONS } from '@/lib/mock-data';
 import { transactionService } from '@/lib/services/transaction-service';
+import { syncService } from '@/lib/services/sync-service';
 import { Radius, Spacing } from '@/constants/tokens';
 import { FontFamily } from '@/constants/typography';
 import { useUserStore } from '@/store';
@@ -118,6 +119,8 @@ export default function LoginScreen() {
         const displayName = email.split('@')[0].replace(/[^a-zA-Z]/g, ' ').trim() || 'User';
         updateProfile({ name: displayName, email });
       }
+      // Start background sync
+      syncService.startBackgroundSync();
       router.replace('/(tabs)');
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Something went wrong';
@@ -148,6 +151,8 @@ export default function LoginScreen() {
         await AsyncStorage.setItem('kh_auth_token', 'local');
       }
       if (name.trim()) updateProfile({ name: name.trim(), email });
+      // Start background sync
+      syncService.startBackgroundSync();
       router.replace('/(tabs)');
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Something went wrong';

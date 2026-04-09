@@ -1,6 +1,7 @@
 import type { Category, Transaction } from '@/lib/mock-data';
 import { transactionRepository, type NewTransaction } from '@/lib/db/repositories/transaction-repository';
 import { detectCategory } from './category-service';
+import { syncService } from './sync-service';
 
 export type AddTransactionInput = {
   amount: number;
@@ -15,7 +16,8 @@ export type AddTransactionInput = {
 
 export const transactionService = {
   /**
-   * Add a new transaction.
+   * Add a new transaction (offline-first).
+   * Saves locally immediately, syncs to backend in background.
    * Auto-detects category from merchant name if not provided.
    */
   async add(input: AddTransactionInput): Promise<Transaction> {
@@ -32,7 +34,8 @@ export const transactionService = {
       note: input.note?.trim(),
     };
 
-    return transactionRepository.insert(data);
+    // Queue for sync (saves locally + syncs in background)
+    return syncService.queueTransaction(data);
   },
 
   async getAll(): Promise<Transaction[]> {

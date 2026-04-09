@@ -16,6 +16,7 @@ import {
   selectUserProfile,
   useUIStore,
 } from '@/store';
+import { syncService } from '@/lib/services/sync-service';
 import { useThemeMode } from '@/hooks/use-theme-mode';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import {
@@ -187,6 +188,8 @@ export default function ProfileScreen() {
               }).catch(() => {});
             }
             await AsyncStorage.multiRemove(['kh_auth_token', 'kh_refresh_token']);
+            // Stop background sync
+            syncService.stopBackgroundSync();
             router.replace('/(auth)/login');
           },
         },
